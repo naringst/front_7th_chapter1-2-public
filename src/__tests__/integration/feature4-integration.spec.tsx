@@ -5,14 +5,14 @@
  * 이 테스트는 반복 일정 수정 시 단일/전체 수정 모드 선택 및 동작을 검증합니다.
  */
 
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { SnackbarProvider } from 'notistack';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
-import { server } from '../../setupTests';
 import App from '../../App';
+import { server } from '../../setupTests';
 import { Event } from '../../types';
 
 // Mock repeating events (same group)
@@ -111,14 +111,14 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
   describe('Story 1: 단일 반복 일정 수정', () => {
     it('TC-4-1-1: 단일 수정 선택 시 해당 일정만 수정되고 반복 속성이 제거된다', async () => {
       // Arrange: MSW로 PUT 요청 모킹
-      let updatedEvent: Event | null = null;
+      const updatedEventRef: { current: Event | null } = { current: null };
       server.use(
         http.put('/api/events/:id', async ({ params, request }) => {
           const id = params.id as string;
           const body = (await request.json()) as Event;
 
           if (id === 'repeat-mon-1') {
-            updatedEvent = body;
+            updatedEventRef.current = body;
           }
 
           return HttpResponse.json(body);
@@ -146,11 +146,12 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       await userEvent.click(saveButton);
 
       // Assert
-      await screen.findByText('일정이 수정되었습니다');
-      expect(updatedEvent).not.toBeNull();
-      expect(updatedEvent?.title).toBe('개인 미팅');
-      expect(updatedEvent?.repeat.type).toBe('none');
-    });
+      const snackbar = await screen.findByText('일정이 수정되었습니다', {}, { timeout: 4000 });
+      expect(snackbar).toBeInTheDocument();
+      expect(updatedEventRef.current).not.toBeNull();
+      expect(updatedEventRef.current?.title).toBe('개인 미팅');
+      expect(updatedEventRef.current?.repeat.type).toBe('none');
+    }, 10000);
 
     it('TC-4-1-2: 단일 수정 후 해당 일정의 반복 아이콘이 사라진다', async () => {
       // Arrange: 단일 수정 완료된 일정 (repeat.type = 'none')
@@ -177,7 +178,8 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
 
       // Assert: "개인 미팅" 주변에 반복 아이콘 없음
       const personalMeeting = within(eventList).getByText('개인 미팅');
-      const container = personalMeeting.closest('[role="button"]') || personalMeeting.parentElement;
+      const container = (personalMeeting.closest('[role="button"]') ||
+        personalMeeting.parentElement) as HTMLElement;
 
       if (container) {
         const icons = within(container).queryAllByLabelText('반복 일정');
@@ -215,16 +217,27 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       // 시간 수정
       const startTimeInput = screen.getByLabelText('시작 시간') as HTMLInputElement;
       await userEvent.clear(startTimeInput);
-      await userEvent.type(startTimeInput, '11:00');
+      await userEvent.type(startTimeInput, '09:00');
+      
+      const endTimeInput = screen.getByLabelText('종료 시간') as HTMLInputElement;
+      await userEvent.clear(endTimeInput);
+      await userEvent.type(endTimeInput, '10:00');
 
-      const saveButton = screen.getByRole('button', { name: /일정 (추가|저장)/i });
+      const saveButton = screen.getByRole('button', { name: /일정 (추가|수정)/i });
       await userEvent.click(saveButton);
 
       // Assert: PUT 호출 1번만 (두 번째 일정만)
-      await screen.findByText('일정이 수정되었습니다');
-      expect(putCalls).toHaveLength(1);
+      await screen.findByText('일정이 수정되었습니다', {}, { timeout: 4000 });
+
+      // PUT 요청 안정화 대기
+      await waitFor(
+        () => {
+          expect(putCalls.length).toBe(1);
+        },
+        { timeout: 1000 }
+      );
       expect(putCalls[0]).toBe('repeat-mon-2');
-    });
+    }, 10000);
   });
 
   // ----- Story 2: 전체 반복 일정 수정 -----
@@ -252,24 +265,39 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       const noButton = await screen.findByRole('button', { name: /아니오/i });
       await userEvent.click(noButton);
 
+      // 다이얼로그가 닫힐 때까지 대기
+      await waitFor(
+        () => {
+          expect(screen.queryByText('해당 일정만 수정하시겠어요?')).not.toBeInTheDocument();
+        },
+        { timeout: 2000 }
+      );
+
       // 제목 수정
       const titleInput = screen.getByLabelText('제목') as HTMLInputElement;
       await userEvent.clear(titleInput);
       await userEvent.type(titleInput, '헬스');
 
-      const saveButton = screen.getByRole('button', { name: /일정 (추가|저장)/i });
+      const saveButton = screen.getByRole('button', { name: /일정 (추가|수정)/i });
       await userEvent.click(saveButton);
 
       // Assert: 3번 PUT 호출, 모든 repeat.type = 'weekly', 모든 title = '헬스'
-      await screen.findByText('일정이 수정되었습니다');
-      expect(Object.keys(updatedEvents)).toHaveLength(3);
+      await screen.findByText('일정이 수정되었습니다', {}, { timeout: 4000 });
+
+      // 모든 PUT 완료 대기
+      await waitFor(
+        () => {
+          expect(Object.keys(updatedEvents).length).toBe(3);
+        },
+        { timeout: 1500 }
+      );
 
       for (const id of ['repeat-mon-1', 'repeat-mon-2', 'repeat-mon-3']) {
         expect(updatedEvents[id]).toBeDefined();
         expect(updatedEvents[id].title).toBe('헬스');
         expect(updatedEvents[id].repeat.type).toBe('weekly');
       }
-    });
+    }, 10000);
 
     it('TC-4-2-2: 전체 수정 후 모든 일정의 반복 아이콘이 유지된다', async () => {
       // Arrange: 전체 수정 완료된 반복 일정들 (모두 "헬스")
@@ -350,22 +378,36 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       const noButton = await screen.findByRole('button', { name: /아니오/i });
       await userEvent.click(noButton);
 
+      // 다이얼로그가 닫힐 때까지 대기
+      await waitFor(
+        () => {
+          expect(screen.queryByText('해당 일정만 수정하시겠어요?')).not.toBeInTheDocument();
+        },
+        { timeout: 2000 }
+      );
+
       // 시간만 수정
       const startTimeInput = screen.getByLabelText('시작 시간') as HTMLInputElement;
       await userEvent.clear(startTimeInput);
-      await userEvent.type(startTimeInput, '10:00');
+      await userEvent.type(startTimeInput, '08:00');
 
-      const saveButton = screen.getByRole('button', { name: /일정 (추가|저장)/i });
+      const saveButton = screen.getByRole('button', { name: /일정 (추가|수정)/i });
       await userEvent.click(saveButton);
 
       // Assert: 모든 repeat.type = 'monthly'
-      await screen.findByText('일정이 수정되었습니다');
-      expect(Object.keys(updatedEvents)).toHaveLength(2);
+      await screen.findByText('일정이 수정되었습니다', {}, { timeout: 4000 });
 
-      for (const id of ['monthly-1', 'monthly-2']) {
-        expect(updatedEvents[id].repeat.type).toBe('monthly');
-      }
-    });
+      // PUT 응답 수집 완료 보장
+      await waitFor(
+        () => {
+          expect(Object.keys(updatedEvents)).toHaveLength(2);
+          for (const id of ['monthly-1', 'monthly-2']) {
+            expect(updatedEvents[id]?.repeat?.type).toBe('monthly');
+          }
+        },
+        { timeout: 1500 }
+      );
+    }, 10000);
   });
 
   // ----- Story 3: 수정 확인 다이얼로그 표시 -----

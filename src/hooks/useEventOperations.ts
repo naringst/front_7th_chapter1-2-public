@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { Event, EventForm } from '../types';
 import { applyEventUpdate } from '../utils/eventUpdateUtils';
 import { getRepeatEndDate } from '../utils/repeatDateUtils';
-import { generateRecurringEventsUntilEndDate } from '../utils/repeatScheduler';
 import { findRepeatGroup } from '../utils/repeatGroupUtils';
+import { generateRecurringEventsUntilEndDate } from '../utils/repeatScheduler';
 import { validateRepeatEndDate } from '../utils/repeatValidation';
 
 export const useEventOperations = (editing: boolean, onSave?: () => void) => {
@@ -35,10 +35,7 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
       // 반복 일정인 경우 종료 날짜 검증
       const isRecurring = eventData.repeat.type !== 'none';
       if (isRecurring) {
-        const validation = validateRepeatEndDate(
-          eventData.date,
-          eventData.repeat.endDate
-        );
+        const validation = validateRepeatEndDate(eventData.date, eventData.repeat.endDate);
 
         if (!validation.valid) {
           enqueueSnackbar(validation.error || '종료 날짜 검증 실패', {
@@ -54,12 +51,19 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
         if (editMode === 'single' || editMode === 'all') {
           const currentEvent = eventData as Event;
 
-          // Find the repeat group
-          const repeatGroup = findRepeatGroup(allEvents, currentEvent);
+          // Find the original event from allEvents to get the repeat group
+          const originalEvent = allEvents.find((e) => e.id === currentEvent.id);
+          if (!originalEvent) {
+            throw new Error('Original event not found');
+          }
+
+          // Find the repeat group using the original event
+          const repeatGroup = findRepeatGroup(allEvents, originalEvent);
 
           if (editMode === 'single') {
             // Single edit: Update only this event, set repeat.type to 'none'
-            const updatedEvent = applyEventUpdate(currentEvent, eventData, 'single');
+            // Apply updates from eventData to originalEvent
+            const updatedEvent = applyEventUpdate(originalEvent, eventData, 'single');
             response = await fetch(`/api/events/${currentEvent.id}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
@@ -68,11 +72,20 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
           } else {
             // All edit: Update all events in the group, keep repeat.type
             const updatePromises = repeatGroup.map(async (groupEvent) => {
-              const updatedEvent = applyEventUpdate(groupEvent, eventData, 'all');
+              // For each event in the group, apply the updates but keep the original date
+              const updatedEvent = {
+                ...groupEvent,
+                ...eventData,
+                id: groupEvent.id, // Keep original ID
+                date: groupEvent.date, // Keep original date
+                repeat: { ...groupEvent.repeat }, // Keep original repeat settings
+              };
+              // Apply mode-specific logic
+              const finalEvent = applyEventUpdate(groupEvent, updatedEvent, 'all');
               return fetch(`/api/events/${groupEvent.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatedEvent),
+                body: JSON.stringify(finalEvent),
               });
             });
 
@@ -93,10 +106,7 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
           const endDate = getRepeatEndDate(eventData.repeat.endDate);
 
           // Generate recurring events until endDate
-          const recurringEvents = generateRecurringEventsUntilEndDate(
-            eventData,
-            endDate
-          );
+          const recurringEvents = generateRecurringEventsUntilEndDate(eventData, endDate);
 
           // Send to /api/events-list for batch creation
           response = await fetch('/api/events-list', {
