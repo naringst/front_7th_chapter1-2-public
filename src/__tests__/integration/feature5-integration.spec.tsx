@@ -224,7 +224,7 @@ const findDeleteButton = (eventTitle: string, index: number = 0): HTMLElement =>
     throw new Error(`Could not find event container for ${eventTitle}`);
   }
 
-  const deleteButton = within(eventContainer as HTMLElement).getByLabelText('Delete event');
+  const deleteButton = within(eventContainer as HTMLElement).getByLabelText('삭제');
   return deleteButton;
 };
 

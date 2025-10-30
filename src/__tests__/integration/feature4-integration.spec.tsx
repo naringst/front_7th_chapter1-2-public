@@ -76,6 +76,25 @@ const renderApp = () => {
   );
 };
 
+/**
+ * Helper function to find edit button for an event in the event list
+ */
+const findEditButton = (eventTitle: string, index: number = 0): HTMLElement => {
+  const eventList = screen.getByTestId('event-list');
+  const eventTitles = within(eventList).getAllByText(eventTitle);
+  const targetEvent = eventTitles[index];
+
+  // The event title is nested inside: Box > Stack > Stack > Typography
+  // We need to go up to the Box level
+  const eventContainer = targetEvent.closest('.MuiBox-root');
+  if (!eventContainer) {
+    throw new Error(`Could not find event container for ${eventTitle}`);
+  }
+
+  const editButton = within(eventContainer as HTMLElement).getByLabelText('수정');
+  return editButton;
+};
+
 describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', () => {
   beforeEach(() => {
     // MSW 핸들러를 사용하여 Mock 데이터 설정
@@ -109,13 +128,8 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       renderApp();
       await screen.findByText('일정 로딩 완료!');
 
-      // Act: 첫 번째 반복 일정 클릭 및 수정
-      const eventList = screen.getByTestId('event-list');
-      const firstEvent = within(eventList).getAllByText('팀 미팅')[0];
-      await userEvent.click(firstEvent);
-
-      // 수정 버튼 클릭
-      const editButton = screen.getByRole('button', { name: /수정/i });
+      // Act: 첫 번째 반복 일정의 수정 버튼 클릭
+      const editButton = findEditButton('팀 미팅', 0);
       await userEvent.click(editButton);
 
       // 다이얼로그에서 "예" (단일 수정) 선택
@@ -128,7 +142,7 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       await userEvent.type(titleInput, '개인 미팅');
 
       // 저장
-      const saveButton = screen.getByRole('button', { name: /일정 (추가|저장)/i });
+      const saveButton = screen.getByRole('button', { name: /일정 (추가|수정)/i });
       await userEvent.click(saveButton);
 
       // Assert
@@ -190,12 +204,8 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       renderApp();
       await screen.findByText('일정 로딩 완료!');
 
-      // Act: 두 번째 반복 일정 수정
-      const eventList = screen.getByTestId('event-list');
-      const secondEvent = within(eventList).getAllByText('팀 미팅')[1];
-      await userEvent.click(secondEvent);
-
-      const editButton = screen.getByRole('button', { name: /수정/i });
+      // Act: 두 번째 반복 일정의 수정 버튼 클릭
+      const editButton = findEditButton('팀 미팅', 1);
       await userEvent.click(editButton);
 
       // "예" 선택
@@ -234,12 +244,8 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       renderApp();
       await screen.findByText('일정 로딩 완료!');
 
-      // Act: 첫 번째 반복 일정 수정
-      const eventList = screen.getByTestId('event-list');
-      const firstEvent = within(eventList).getAllByText('팀 미팅')[0];
-      await userEvent.click(firstEvent);
-
-      const editButton = screen.getByRole('button', { name: /수정/i });
+      // Act: 첫 번째 반복 일정의 수정 버튼 클릭
+      const editButton = findEditButton('팀 미팅', 0);
       await userEvent.click(editButton);
 
       // "아니오" (전체 수정) 선택
@@ -337,12 +343,8 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       renderApp();
       await screen.findByText('일정 로딩 완료!');
 
-      // Act: 첫 번째 일정 수정
-      const eventList = screen.getByTestId('event-list');
-      const firstEvent = within(eventList).getAllByText('월례 회의')[0];
-      await userEvent.click(firstEvent);
-
-      const editButton = screen.getByRole('button', { name: /수정/i });
+      // Act: 첫 번째 일정의 수정 버튼 클릭
+      const editButton = findEditButton('월례 회의', 0);
       await userEvent.click(editButton);
 
       const noButton = await screen.findByRole('button', { name: /아니오/i });
@@ -373,12 +375,8 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       renderApp();
       await screen.findByText('일정 로딩 완료!');
 
-      // Act: 반복 일정 클릭 및 수정 버튼
-      const eventList = screen.getByTestId('event-list');
-      const repeatingEvent = within(eventList).getAllByText('팀 미팅')[0];
-      await userEvent.click(repeatingEvent);
-
-      const editButton = screen.getByRole('button', { name: /수정/i });
+      // Act: 반복 일정의 수정 버튼 클릭
+      const editButton = findEditButton('팀 미팅', 0);
       await userEvent.click(editButton);
 
       // Assert: 다이얼로그 표시
@@ -392,11 +390,7 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       renderApp();
       await screen.findByText('일정 로딩 완료!');
 
-      const eventList = screen.getByTestId('event-list');
-      const repeatingEvent = within(eventList).getAllByText('팀 미팅')[0];
-      await userEvent.click(repeatingEvent);
-
-      const editButton = screen.getByRole('button', { name: /수정/i });
+      const editButton = findEditButton('팀 미팅', 0);
       await userEvent.click(editButton);
 
       // Act: "예" 선택
@@ -404,7 +398,9 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       await userEvent.click(yesButton);
 
       // Assert: 다이얼로그 닫힘, 수정 폼 표시
-      expect(screen.queryByText('해당 일정만 수정하시겠어요?')).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.queryByText('해당 일정만 수정하시겠어요?')).not.toBeInTheDocument();
+      });
       expect(screen.getByLabelText('제목')).toBeInTheDocument();
     });
 
@@ -413,11 +409,7 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       renderApp();
       await screen.findByText('일정 로딩 완료!');
 
-      const eventList = screen.getByTestId('event-list');
-      const repeatingEvent = within(eventList).getAllByText('팀 미팅')[0];
-      await userEvent.click(repeatingEvent);
-
-      const editButton = screen.getByRole('button', { name: /수정/i });
+      const editButton = findEditButton('팀 미팅', 0);
       await userEvent.click(editButton);
 
       // Act: "아니오" 선택
@@ -425,7 +417,9 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       await userEvent.click(noButton);
 
       // Assert: 다이얼로그 닫힘, 수정 폼 표시
-      expect(screen.queryByText('해당 일정만 수정하시겠어요?')).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.queryByText('해당 일정만 수정하시겠어요?')).not.toBeInTheDocument();
+      });
       expect(screen.getByLabelText('제목')).toBeInTheDocument();
     });
 
@@ -434,12 +428,8 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       renderApp();
       await screen.findByText('일정 로딩 완료!');
 
-      // Act: 일반 일정 클릭 및 수정 버튼
-      const eventList = screen.getByTestId('event-list');
-      const normalEvent = within(eventList).getByText('일반 회의');
-      await userEvent.click(normalEvent);
-
-      const editButton = screen.getByRole('button', { name: /수정/i });
+      // Act: 일반 일정의 수정 버튼 클릭
+      const editButton = findEditButton('일반 회의', 0);
       await userEvent.click(editButton);
 
       // Assert: 다이얼로그 표시되지 않음, 바로 수정 폼 표시

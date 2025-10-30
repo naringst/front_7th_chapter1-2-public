@@ -2,8 +2,10 @@ import { useSnackbar } from 'notistack';
 import { useEffect, useState } from 'react';
 
 import { Event, EventForm } from '../types';
+import { applyEventUpdate } from '../utils/eventUpdateUtils';
 import { getRepeatEndDate } from '../utils/repeatDateUtils';
 import { generateRecurringEventsUntilEndDate } from '../utils/repeatScheduler';
+import { findRepeatGroup } from '../utils/repeatGroupUtils';
 import { validateRepeatEndDate } from '../utils/repeatValidation';
 
 export const useEventOperations = (editing: boolean, onSave?: () => void) => {
@@ -24,7 +26,11 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
     }
   };
 
-  const saveEvent = async (eventData: Event | EventForm) => {
+  const saveEvent = async (
+    eventData: Event | EventForm,
+    editMode: 'single' | 'all' | null = null,
+    allEvents: Event[] = []
+  ) => {
     try {
       // 반복 일정인 경우 종료 날짜 검증
       const isRecurring = eventData.repeat.type !== 'none';
@@ -44,11 +50,43 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
 
       let response;
       if (editing) {
-        response = await fetch(`/api/events/${(eventData as Event).id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(eventData),
-        });
+        // Feature 4: Handle edit mode for repeating events
+        if (editMode === 'single' || editMode === 'all') {
+          const currentEvent = eventData as Event;
+
+          // Find the repeat group
+          const repeatGroup = findRepeatGroup(allEvents, currentEvent);
+
+          if (editMode === 'single') {
+            // Single edit: Update only this event, set repeat.type to 'none'
+            const updatedEvent = applyEventUpdate(currentEvent, eventData, 'single');
+            response = await fetch(`/api/events/${currentEvent.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(updatedEvent),
+            });
+          } else {
+            // All edit: Update all events in the group, keep repeat.type
+            const updatePromises = repeatGroup.map(async (groupEvent) => {
+              const updatedEvent = applyEventUpdate(groupEvent, eventData, 'all');
+              return fetch(`/api/events/${groupEvent.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedEvent),
+              });
+            });
+
+            const responses = await Promise.all(updatePromises);
+            response = responses[0]; // Use first response for success check
+          }
+        } else {
+          // Normal edit (no edit mode specified, or normal event)
+          response = await fetch(`/api/events/${(eventData as Event).id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(eventData),
+          });
+        }
       } else {
         if (isRecurring) {
           // 종료 날짜 적용 (기본값: 2025-12-31)

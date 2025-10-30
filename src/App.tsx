@@ -101,9 +101,10 @@ function App() {
     editEvent,
   } = useEventForm();
 
-  const { events, saveEvent, deleteEvent } = useEventOperations(Boolean(editingEvent), () =>
-    setEditingEvent(null)
-  );
+  const { events, saveEvent, deleteEvent } = useEventOperations(Boolean(editingEvent), () => {
+    setEditingEvent(null);
+    setEditMode(null); // Reset edit mode after save
+  });
 
   const { notifications, notifiedEvents, setNotifications } = useNotifications(events);
   const { view, setView, currentDate, holidays, navigate } = useCalendarView();
@@ -112,7 +113,34 @@ function App() {
   const [isOverlapDialogOpen, setIsOverlapDialogOpen] = useState(false);
   const [overlappingEvents, setOverlappingEvents] = useState<Event[]>([]);
 
+  // Feature 4: 반복 일정 수정 모드 선택
+  const [isEditModeDialogOpen, setIsEditModeDialogOpen] = useState(false);
+  const [pendingEditEvent, setPendingEditEvent] = useState<Event | null>(null);
+  const [editMode, setEditMode] = useState<'single' | 'all' | null>(null);
+
   const { enqueueSnackbar } = useSnackbar();
+
+  // Override editEvent to show dialog for repeating events
+  const handleEditEvent = (event: Event) => {
+    if (event.repeat.type !== 'none') {
+      // 반복 일정이면 다이얼로그 표시
+      setPendingEditEvent(event);
+      setIsEditModeDialogOpen(true);
+    } else {
+      // 일반 일정이면 바로 편집 모드로
+      editEvent(event);
+    }
+  };
+
+  // Handle edit mode selection from dialog
+  const handleEditModeSelection = (mode: 'single' | 'all') => {
+    setEditMode(mode);
+    setIsEditModeDialogOpen(false);
+    if (pendingEditEvent) {
+      editEvent(pendingEditEvent);
+      setPendingEditEvent(null);
+    }
+  };
 
   const addOrUpdateEvent = async () => {
     if (!title || !date || !startTime || !endTime) {
@@ -147,7 +175,7 @@ function App() {
       setOverlappingEvents(overlapping);
       setIsOverlapDialogOpen(true);
     } else {
-      await saveEvent(eventData);
+      await saveEvent(eventData, editMode, events); // Pass editMode and events for group editing
       resetForm();
     }
   };
@@ -628,10 +656,10 @@ function App() {
                     </Typography>
                   </Stack>
                   <Stack>
-                    <IconButton aria-label="Edit event" onClick={() => editEvent(event)}>
+                    <IconButton aria-label="수정" onClick={() => handleEditEvent(event)}>
                       <Edit />
                     </IconButton>
-                    <IconButton aria-label="Delete event" onClick={() => deleteEvent(event.id)}>
+                    <IconButton aria-label="삭제" onClick={() => deleteEvent(event.id)}>
                       <Delete />
                     </IconButton>
                   </Stack>
@@ -661,26 +689,42 @@ function App() {
             color="error"
             onClick={() => {
               setIsOverlapDialogOpen(false);
-              saveEvent({
-                id: editingEvent ? editingEvent.id : undefined,
-                title,
-                date,
-                startTime,
-                endTime,
-                description,
-                location,
-                category,
-                repeat: {
-                  type: isRepeating ? repeatType : 'none',
-                  interval: repeatInterval,
-                  endDate: repeatEndDate || undefined,
+              saveEvent(
+                {
+                  id: editingEvent ? editingEvent.id : undefined,
+                  title,
+                  date,
+                  startTime,
+                  endTime,
+                  description,
+                  location,
+                  category,
+                  repeat: {
+                    type: isRepeating ? repeatType : 'none',
+                    interval: repeatInterval,
+                    endDate: repeatEndDate || undefined,
+                  },
+                  notificationTime,
                 },
-                notificationTime,
-              });
+                editMode,
+                events
+              );
             }}
           >
             계속 진행
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Feature 4: 반복 일정 수정 모드 선택 다이얼로그 */}
+      <Dialog open={isEditModeDialogOpen} onClose={() => setIsEditModeDialogOpen(false)}>
+        <DialogTitle>반복 일정 수정</DialogTitle>
+        <DialogContent>
+          <DialogContentText>해당 일정만 수정하시겠어요?</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => handleEditModeSelection('single')}>예</Button>
+          <Button onClick={() => handleEditModeSelection('all')}>아니오</Button>
         </DialogActions>
       </Dialog>
 
