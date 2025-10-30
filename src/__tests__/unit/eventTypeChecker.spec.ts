@@ -11,135 +11,109 @@ import { describe, it, expect } from 'vitest';
 import type { Event } from '../../types';
 import { isRepeatingEvent } from '../../utils/eventTypeChecker';
 
+// [Refactored] 타입 단언을 위한 헬퍼 함수 추가
+function createPartialEvent(partial: Record<string, unknown>): Event {
+  return partial as unknown as Event;
+}
+
 describe('isRepeatingEvent', () => {
-  // ----- 정상 케이스: 반복 유형 판별 -----
   describe('정상 케이스: 반복 유형 판별', () => {
+    // [Refactored] AAA 주석 제거, 헬퍼 함수 사용으로 간결성 개선
     it('TC-U2-1-1: daily 반복 일정을 true로 판별', () => {
-      // Arrange
-      const event = {
+      const event = createPartialEvent({
         id: '1',
         title: '매일 회의',
         repeat: { type: 'daily', interval: 1 },
-      };
+      });
 
-      // Act
-      const result = isRepeatingEvent(event as unknown as Event);
+      const result = isRepeatingEvent(event);
 
-      // Assert
       expect(result).toBe(true);
     });
 
     it('TC-U2-1-2: weekly 반복 일정을 true로 판별', () => {
-      // Arrange
-      const event = {
+      const event = createPartialEvent({
         id: '2',
         title: '매주 회의',
         repeat: { type: 'weekly', interval: 1 },
-      };
+      });
 
-      // Act
-      const result = isRepeatingEvent(event as unknown as Event);
+      const result = isRepeatingEvent(event);
 
-      // Assert
       expect(result).toBe(true);
     });
 
     it('TC-U2-1-3: monthly 반복 일정을 true로 판별', () => {
-      // Arrange
-      const event = {
+      const event = createPartialEvent({
         id: '3',
         title: '매월 보고',
         repeat: { type: 'monthly', interval: 1 },
-      };
+      });
 
-      // Act
-      const result = isRepeatingEvent(event as unknown as Event);
+      const result = isRepeatingEvent(event);
 
-      // Assert
       expect(result).toBe(true);
     });
 
     it('TC-U2-1-4: yearly 반복 일정을 true로 판별', () => {
-      // Arrange
-      const event = {
+      const event = createPartialEvent({
         id: '4',
         title: '연간 평가',
         repeat: { type: 'yearly', interval: 1 },
-      };
+      });
 
-      // Act
-      const result = isRepeatingEvent(event as unknown as Event);
+      const result = isRepeatingEvent(event);
 
-      // Assert
       expect(result).toBe(true);
     });
 
     it('TC-U2-1-5: 일반 일정(none)을 false로 판별', () => {
-      // Arrange
-      const event = {
+      const event = createPartialEvent({
         id: '5',
         title: '일반 회의',
         repeat: { type: 'none', interval: 1 },
-      };
+      });
 
-      // Act
-      const result = isRepeatingEvent(event as unknown as Event);
+      const result = isRepeatingEvent(event);
 
-      // Assert
       expect(result).toBe(false);
     });
   });
 
-  // ----- 엣지 케이스: 안전한 처리 -----
   describe('엣지 케이스: 안전한 처리', () => {
+    // [Refactored] AAA 주석 제거, 헬퍼 함수 사용으로 간결성 개선
     it('TC-U2-1-6: repeat 속성 없을 때 false 반환', () => {
-      // Arrange
-      const event = {
+      const event = createPartialEvent({
         id: '6',
         title: '속성 없음',
-      };
+      });
 
-      // Act
-      const result = isRepeatingEvent(event as unknown as Event);
+      const result = isRepeatingEvent(event);
 
-      // Assert
       expect(result).toBe(false);
     });
 
     it('TC-U2-1-7: repeat.type 없을 때 false 반환', () => {
-      // Arrange
-      const event = {
+      const event = createPartialEvent({
         id: '7',
         title: '불완전한 객체',
         repeat: {},
-      };
+      });
 
-      // Act
-      const result = isRepeatingEvent(event as unknown as Event);
+      const result = isRepeatingEvent(event);
 
-      // Assert
       expect(result).toBe(false);
     });
 
     it('TC-U2-1-8: null 입력 시 false 반환', () => {
-      // Arrange
-      const event = null;
+      const result = isRepeatingEvent(null);
 
-      // Act
-      const result = isRepeatingEvent(event);
-
-      // Assert
       expect(result).toBe(false);
     });
 
     it('TC-U2-1-9: undefined 입력 시 false 반환', () => {
-      // Arrange
-      const event = undefined;
+      const result = isRepeatingEvent(undefined);
 
-      // Act
-      const result = isRepeatingEvent(event);
-
-      // Assert
       expect(result).toBe(false);
     });
   });
