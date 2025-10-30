@@ -10,7 +10,7 @@ description: |
   통합 테스트 설계 문서를 기반으로 각 기능을 구성하는 순수 단위(서비스, 유틸)를 식별한다.
   각 단위의 역할, 메서드, 예상 입력/출력, 상호 의존 관계를 구조화해 출력한다.
 
-input: test-design/${feature}-test-design.md
+input: test-design/${feature}-test-design.md, {feature}-integration.spec.tsx
 output: docs/test-design/unit/unit-test-design-${feature}.md
 
 prompt: |
