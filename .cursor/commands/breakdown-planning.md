@@ -91,5 +91,5 @@ markdown
 - 테스트 코드, 시나리오, 또는 검증 로직은 생성하지 않습니다.
 - 결과는 나중에 다른 Agent(`test-writer.md`, `flow-reviewer.md`)가 활용할 수 있도록  
   일관된 구조로 유지해야 합니다.
-- 만들어서 출력물은 docs의 prd-output에 넝어주세요
+- 만들어서 출력물은 outputs의 2-splited-features에 {기능}-breakdown.md 이름으로 넝어주세요
 - 잘 모르곘는 확정되지 않은 내용은 사용자에게 되물어주세요
