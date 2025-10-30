@@ -49,4 +49,3 @@ export function findRepeatGroup(events: Event[], targetEvent: Event): Event[] {
       event.repeat.type !== 'none' // 일반 일정 제외
   );
 }
-

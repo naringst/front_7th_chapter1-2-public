@@ -97,11 +97,11 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
         http.put('/api/events/:id', async ({ params, request }) => {
           const id = params.id as string;
           const body = (await request.json()) as Event;
-          
+
           if (id === 'repeat-mon-1') {
             updatedEvent = body;
           }
-          
+
           return HttpResponse.json(body);
         })
       );
@@ -164,7 +164,7 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       // Assert: "개인 미팅" 주변에 반복 아이콘 없음
       const personalMeeting = within(eventList).getByText('개인 미팅');
       const container = personalMeeting.closest('[role="button"]') || personalMeeting.parentElement;
-      
+
       if (container) {
         const icons = within(container).queryAllByLabelText('반복 일정');
         expect(icons).toHaveLength(0);
@@ -257,7 +257,7 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       // Assert: 3번 PUT 호출, 모든 repeat.type = 'weekly', 모든 title = '헬스'
       await screen.findByText('일정이 수정되었습니다');
       expect(Object.keys(updatedEvents)).toHaveLength(3);
-      
+
       for (const id of ['repeat-mon-1', 'repeat-mon-2', 'repeat-mon-3']) {
         expect(updatedEvents[id]).toBeDefined();
         expect(updatedEvents[id].title).toBe('헬스');
@@ -359,7 +359,7 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       // Assert: 모든 repeat.type = 'monthly'
       await screen.findByText('일정이 수정되었습니다');
       expect(Object.keys(updatedEvents)).toHaveLength(2);
-      
+
       for (const id of ['monthly-1', 'monthly-2']) {
         expect(updatedEvents[id].repeat.type).toBe('monthly');
       }
@@ -448,4 +448,3 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
     });
   });
 });
-
