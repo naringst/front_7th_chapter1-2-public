@@ -1,0 +1,7 @@
+{
+  "default_language": "ko",
+  "output_format": "markdown",
+  "editor_policy": {
+    "auto_apply_changes": true
+  }
+}
