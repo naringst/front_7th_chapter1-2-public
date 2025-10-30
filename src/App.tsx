@@ -14,7 +14,6 @@ import {
   FormControlLabel,
   FormLabel,
   IconButton,
-  MenuItem,
   Select,
   Stack,
   Table,
@@ -35,8 +34,7 @@ import { useEventForm } from './hooks/useEventForm.ts';
 import { useEventOperations } from './hooks/useEventOperations.ts';
 import { useNotifications } from './hooks/useNotifications.ts';
 import { useSearch } from './hooks/useSearch.ts';
-// import { Event, EventForm, RepeatType } from './types';
-import { Event, EventForm } from './types';
+import { Event, EventForm, RepeatType } from './types';
 import {
   formatDate,
   formatMonth,
@@ -77,11 +75,11 @@ function App() {
     isRepeating,
     setIsRepeating,
     repeatType,
-    // setRepeatType,
+    setRepeatType,
     repeatInterval,
-    // setRepeatInterval,
+    setRepeatInterval,
     repeatEndDate,
-    // setRepeatEndDate,
+    setRepeatEndDate,
     notificationTime,
     setNotificationTime,
     startTimeError,
@@ -322,21 +320,27 @@ function App() {
           <FormControl fullWidth>
             <FormLabel htmlFor="title">제목</FormLabel>
             <TextField
-              id="title"
               size="small"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              inputProps={{
+                id: 'title',
+                'data-testid': 'title-input',
+              }}
             />
           </FormControl>
 
           <FormControl fullWidth>
             <FormLabel htmlFor="date">날짜</FormLabel>
             <TextField
-              id="date"
               size="small"
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
+              inputProps={{
+                id: 'date',
+                'data-testid': 'date-input',
+              }}
             />
           </FormControl>
 
@@ -345,13 +349,16 @@ function App() {
               <FormLabel htmlFor="start-time">시작 시간</FormLabel>
               <Tooltip title={startTimeError || ''} open={!!startTimeError} placement="top">
                 <TextField
-                  id="start-time"
                   size="small"
                   type="time"
                   value={startTime}
                   onChange={handleStartTimeChange}
                   onBlur={() => getTimeErrorMessage(startTime, endTime)}
                   error={!!startTimeError}
+                  inputProps={{
+                    id: 'start-time',
+                    'data-testid': 'start-time-input',
+                  }}
                 />
               </Tooltip>
             </FormControl>
@@ -359,13 +366,16 @@ function App() {
               <FormLabel htmlFor="end-time">종료 시간</FormLabel>
               <Tooltip title={endTimeError || ''} open={!!endTimeError} placement="top">
                 <TextField
-                  id="end-time"
                   size="small"
                   type="time"
                   value={endTime}
                   onChange={handleEndTimeChange}
                   onBlur={() => getTimeErrorMessage(startTime, endTime)}
                   error={!!endTimeError}
+                  inputProps={{
+                    id: 'end-time',
+                    'data-testid': 'end-time-input',
+                  }}
                 />
               </Tooltip>
             </FormControl>
@@ -374,26 +384,33 @@ function App() {
           <FormControl fullWidth>
             <FormLabel htmlFor="description">설명</FormLabel>
             <TextField
-              id="description"
               size="small"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              inputProps={{
+                id: 'description',
+                'aria-label': '설명',
+              }}
             />
           </FormControl>
 
           <FormControl fullWidth>
             <FormLabel htmlFor="location">위치</FormLabel>
             <TextField
-              id="location"
               size="small"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
+              inputProps={{
+                id: 'location',
+                'aria-label': '위치',
+              }}
             />
           </FormControl>
 
           <FormControl fullWidth>
             <FormLabel id="category-label">카테고리</FormLabel>
             <Select
+              native
               id="category"
               size="small"
               value={category}
@@ -402,9 +419,9 @@ function App() {
               aria-label="카테고리"
             >
               {categories.map((cat) => (
-                <MenuItem key={cat} value={cat} aria-label={`${cat}-option`}>
+                <option key={cat} value={cat} aria-label={`${cat}-option`}>
                   {cat}
-                </MenuItem>
+                </option>
               ))}
             </Select>
           </FormControl>
@@ -414,7 +431,15 @@ function App() {
               control={
                 <Checkbox
                   checked={isRepeating}
-                  onChange={(e) => setIsRepeating(e.target.checked)}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setIsRepeating(checked);
+                    if (checked && repeatType === 'none') {
+                      setRepeatType('daily');
+                    } else if (!checked) {
+                      setRepeatType('none');
+                    }
+                  }}
                 />
               }
               label="반복 일정"
@@ -424,33 +449,39 @@ function App() {
           <FormControl fullWidth>
             <FormLabel htmlFor="notification">알림 설정</FormLabel>
             <Select
+              native
               id="notification"
               size="small"
               value={notificationTime}
               onChange={(e) => setNotificationTime(Number(e.target.value))}
             >
               {notificationOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
+                <option key={option.value} value={option.value}>
                   {option.label}
-                </MenuItem>
+                </option>
               ))}
             </Select>
           </FormControl>
 
           {/* ! 반복은 8주차 과제에 포함됩니다. 구현하고 싶어도 참아주세요~ */}
-          {/* {isRepeating && (
+          {isRepeating && (
             <Stack spacing={2}>
               <FormControl fullWidth>
-                <FormLabel>반복 유형</FormLabel>
+                <FormLabel htmlFor="repeat-type">반복 유형</FormLabel>
                 <Select
+                  native
                   size="small"
-                  value={repeatType}
+                  value={repeatType === 'none' ? 'daily' : repeatType}
                   onChange={(e) => setRepeatType(e.target.value as RepeatType)}
+                  inputProps={{
+                    id: 'repeat-type',
+                    'aria-label': '반복 유형',
+                  }}
                 >
-                  <MenuItem value="daily">매일</MenuItem>
-                  <MenuItem value="weekly">매주</MenuItem>
-                  <MenuItem value="monthly">매월</MenuItem>
-                  <MenuItem value="yearly">매년</MenuItem>
+                  <option value="daily">매일</option>
+                  <option value="weekly">매주</option>
+                  <option value="monthly">매월</option>
+                  <option value="yearly">매년</option>
                 </Select>
               </FormControl>
               <Stack direction="row" spacing={2}>
@@ -475,7 +506,7 @@ function App() {
                 </FormControl>
               </Stack>
             </Stack>
-          )} */}
+          )}
 
           <Button
             data-testid="event-submit-button"
@@ -495,17 +526,18 @@ function App() {
               <ChevronLeft />
             </IconButton>
             <Select
+              native
               size="small"
               aria-label="뷰 타입 선택"
               value={view}
               onChange={(e) => setView(e.target.value as 'week' | 'month')}
             >
-              <MenuItem value="week" aria-label="week-option">
+              <option value="week" aria-label="week-option">
                 Week
-              </MenuItem>
-              <MenuItem value="month" aria-label="month-option">
+              </option>
+              <option value="month" aria-label="month-option">
                 Month
-              </MenuItem>
+              </option>
             </Select>
             <IconButton aria-label="Next" onClick={() => navigate('next')}>
               <ChevronRight />
