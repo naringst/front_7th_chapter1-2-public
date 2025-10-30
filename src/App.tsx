@@ -1,4 +1,12 @@
-import { Notifications, ChevronLeft, ChevronRight, Delete, Edit, Close } from '@mui/icons-material';
+import {
+  Notifications,
+  ChevronLeft,
+  ChevronRight,
+  Delete,
+  Edit,
+  Close,
+  Repeat,
+} from '@mui/icons-material';
 import {
   Alert,
   AlertTitle,
@@ -44,6 +52,7 @@ import {
   getWeeksAtMonth,
 } from './utils/dateUtils';
 import { findOverlappingEvents } from './utils/eventOverlap';
+import { isRepeatingEvent } from './utils/eventTypeChecker';
 import { getTimeErrorMessage } from './utils/timeValidation';
 
 const categories = ['업무', '개인', '가족', '기타'];
@@ -198,6 +207,9 @@ function App() {
                             }}
                           >
                             <Stack direction="row" spacing={1} alignItems="center">
+                              {isRepeatingEvent(event) && (
+                                <Repeat fontSize="small" aria-label="반복 일정" />
+                              )}
                               {isNotified && <Notifications fontSize="small" />}
                               <Typography
                                 variant="caption"
@@ -285,6 +297,9 @@ function App() {
                                   }}
                                 >
                                   <Stack direction="row" spacing={1} alignItems="center">
+                                    {isRepeatingEvent(event) && (
+                                      <Repeat fontSize="small" aria-label="반복 일정" />
+                                    )}
                                     {isNotified && <Notifications fontSize="small" />}
                                     <Typography
                                       variant="caption"
@@ -572,6 +587,7 @@ function App() {
                 <Stack direction="row" justifyContent="space-between">
                   <Stack>
                     <Stack direction="row" spacing={1} alignItems="center">
+                      {isRepeatingEvent(event) && <Repeat aria-label="반복 일정" />}
                       {notifiedEvents.includes(event.id) && <Notifications color="error" />}
                       <Typography
                         fontWeight={notifiedEvents.includes(event.id) ? 'bold' : 'normal'}
