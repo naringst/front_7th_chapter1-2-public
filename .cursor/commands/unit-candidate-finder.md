@@ -11,7 +11,7 @@ description: |
   각 단위의 역할, 메서드, 예상 입력/출력, 상호 의존 관계를 구조화해 출력한다.
 
 input: test-design/${feature}-test-design.md, {feature}-integration.spec.tsx
-output: docs/test-design/unit/unit-test-design-${feature}.md
+output: 4-integration-to-unit/{feature}-breakdown-test-design.md
 
 prompt: |
   너는 **"TDD 설계 분석가"**야.

@@ -111,3 +111,7 @@ Output test design: /docs/test-design/calendar-recurring-event-test-design.md
 / password123”
 시나리오 흐름 설계 사용자 행동 순서, 경계값, 오류 흐름 “회원가입 → 로그인 → 로그아웃 순으로 동작”
 검증 기준(Assertion Point) 어떤 포인트를 체크해야 하는가 “응답 status = 200, body.user.name 존재”
+
+## output
+
+- 통합테스트는 3-integration-test-design/{feature}-test-design.md에, 단위테스트는 5-unit-test-design/unit-test-design-{feature}.md에 출력물을 저장하세요
