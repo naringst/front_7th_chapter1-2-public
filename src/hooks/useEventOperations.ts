@@ -2,6 +2,7 @@ import { useSnackbar } from 'notistack';
 import { useEffect, useState } from 'react';
 
 import { Event, EventForm } from '../types';
+import { generateRecurringEvents } from '../utils/repeatScheduler';
 
 export const useEventOperations = (editing: boolean, onSave?: () => void) => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -31,11 +32,27 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
           body: JSON.stringify(eventData),
         });
       } else {
-        response = await fetch('/api/events', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(eventData),
-        });
+        // Check if this is a recurring event
+        const isRecurring = eventData.repeat.type !== 'none';
+
+        if (isRecurring) {
+          // Generate recurring events
+          const recurringEvents = generateRecurringEvents(eventData);
+
+          // Send to /api/events-list for batch creation
+          response = await fetch('/api/events-list', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ events: recurringEvents }),
+          });
+        } else {
+          // Single event creation
+          response = await fetch('/api/events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(eventData),
+          });
+        }
       }
 
       if (!response.ok) {

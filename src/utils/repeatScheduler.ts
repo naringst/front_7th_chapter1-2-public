@@ -1,4 +1,4 @@
-import type { EventForm } from '../types';
+import type { EventForm, Event } from '../types';
 import { addDays, addWeeks, isValidDateInMonth } from './repeatDateUtils';
 
 export interface RecurringGenerationParams {
@@ -91,3 +91,50 @@ export const generateYearlyOccurrences = (params: RecurringGenerationParams): Ev
 export const generateSingleEvent = (baseEvent: EventForm): EventForm[] => {
   return [baseEvent];
 };
+
+/**
+ * Generate recurring events based on repeat type
+ */
+export const generateRecurringEvents = (baseEvent: EventForm | Event): EventForm[] => {
+  const repeatType = baseEvent.repeat.type;
+
+  if (repeatType === 'none') {
+    return generateSingleEvent(baseEvent as EventForm);
+  }
+
+  const params: RecurringGenerationParams = {
+    baseEvent: baseEvent as EventForm,
+    occurrenceCount: getDefaultCount(repeatType),
+  };
+
+  switch (repeatType) {
+    case 'daily':
+      return generateDailyOccurrences(params);
+    case 'weekly':
+      return generateWeeklyOccurrences(params);
+    case 'monthly':
+      return generateMonthlyOccurrences(params);
+    case 'yearly':
+      return generateYearlyOccurrences(params);
+    default:
+      return generateSingleEvent(baseEvent as EventForm);
+  }
+};
+
+/**
+ * Get default count for each repeat type
+ */
+function getDefaultCount(repeatType: string): number {
+  switch (repeatType) {
+    case 'daily':
+      return 7; // 7 days
+    case 'weekly':
+      return 4; // 4 weeks
+    case 'monthly':
+      return 12; // 12 months (1 year)
+    case 'yearly':
+      return 5; // 5 years
+    default:
+      return 1;
+  }
+}
