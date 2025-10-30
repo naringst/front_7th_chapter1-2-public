@@ -2,7 +2,9 @@ import { useSnackbar } from 'notistack';
 import { useEffect, useState } from 'react';
 
 import { Event, EventForm } from '../types';
-import { generateRecurringEvents } from '../utils/repeatScheduler';
+import { getRepeatEndDate } from '../utils/repeatDateUtils';
+import { generateRecurringEventsUntilEndDate } from '../utils/repeatScheduler';
+import { validateRepeatEndDate } from '../utils/repeatValidation';
 
 export const useEventOperations = (editing: boolean, onSave?: () => void) => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -24,6 +26,22 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
 
   const saveEvent = async (eventData: Event | EventForm) => {
     try {
+      // 반복 일정인 경우 종료 날짜 검증
+      const isRecurring = eventData.repeat.type !== 'none';
+      if (isRecurring) {
+        const validation = validateRepeatEndDate(
+          eventData.date,
+          eventData.repeat.endDate
+        );
+
+        if (!validation.valid) {
+          enqueueSnackbar(validation.error || '종료 날짜 검증 실패', {
+            variant: 'error',
+          });
+          return;
+        }
+      }
+
       let response;
       if (editing) {
         response = await fetch(`/api/events/${(eventData as Event).id}`, {
@@ -32,12 +50,15 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
           body: JSON.stringify(eventData),
         });
       } else {
-        // Check if this is a recurring event
-        const isRecurring = eventData.repeat.type !== 'none';
-
         if (isRecurring) {
-          // Generate recurring events
-          const recurringEvents = generateRecurringEvents(eventData);
+          // 종료 날짜 적용 (기본값: 2025-12-31)
+          const endDate = getRepeatEndDate(eventData.repeat.endDate);
+
+          // Generate recurring events until endDate
+          const recurringEvents = generateRecurringEventsUntilEndDate(
+            eventData,
+            endDate
+          );
 
           // Send to /api/events-list for batch creation
           response = await fetch('/api/events-list', {

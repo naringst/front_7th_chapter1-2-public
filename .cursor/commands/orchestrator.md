@@ -1,4 +1,4 @@
-# 🎯 Orchestrator Agent
+# 🎯 Orchestrator Agent (v1.1)
 
 ## 🧠 Brain: Core Persona & Purpose
 
@@ -17,9 +17,9 @@ TDD 기반 기능 개발 워크플로우를 **end-to-end로 조율**하는 총�
 
 ### 워크플로우 상태 추적
 
-```yaml
+````yaml
 current_feature: 'FEATURE_NAME'
-current_stage: 1 # 1~8
+current_stage: 1 # 1~8.5
 stage_status:
   1_breakdown: 'pending|in_progress|completed|failed'
   2_integration_design: 'pending|in_progress|completed|failed'
@@ -27,24 +27,24 @@ stage_status:
   4_unit_candidate: 'pending|in_progress|completed|failed'
   5_unit_design: 'pending|in_progress|completed|failed'
   6_unit_test: 'pending|in_progress|completed|failed'
+  6_5_unit_test_refactor: 'pending|in_progress|completed|failed'
   7_unit_tdd: 'pending|in_progress|completed|failed'
+  7_5_unit_refactor: 'pending|in_progress|completed|failed'
   8_integration_tdd: 'pending|in_progress|completed|failed'
-```
-
+  8_5_integration_refactor: 'pending|in_progress|completed|failed'
 ### 아티팩트 경로 (Artifact Paths)
-
-| Stage                 | Input                                                           | Output                                                                      | Tool                                                       |
-| --------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| 1. Breakdown          | `docs/prd-output/FEATURE{N}.md`                                 | `.cursor/outputs/2-splited-features/feature{n}-breakdown.md`                | `/breakdown-planning`                                      |
-| 2. Integration Design | `feature{n}-breakdown.md`                                       | `.cursor/outputs/3-integration-test-design/feature{n}-test-design.md`       | `/test-design`                                             |
-| 3. Integration Test   | `feature{n}-test-design.md`                                     | `src/__tests__/integration/feature{n}-integration.spec.tsx`                 | `/integration-test-writer` + `/integration-test-evaluator` |
-| 4. Unit Candidate     | `feature{n}-integration.spec.tsx` + `feature{n}-test-design.md` | `.cursor/outputs/4-integration-to-unit/feature{n}-breakdown-test-design.md` | `/unit-candidate-finder`                                   |
-| 5. Unit Design        | `feature{n}-breakdown-test-design.md`                           | `.cursor/outputs/5-unit-test-design/unit-test-design-feature{n}.md`         | `/test-design`                                             |
-| 6. Unit Test          | `unit-test-design-feature{n}.md`                                | `src/__tests__/unit/*.spec.ts`                                              | `/unit-test-writer`                                        |
-| 7. Unit TDD           | `unit tests`                                                    | Implementation files                                                        | `/developer`                                               |
-| 8. Integration TDD    | `integration tests`                                             | Implementation files                                                        | `/developer`                                               |
-
----
+Stage	Input	Output	Tool
+1. Breakdown	docs/prd-output/FEATURE{N}.md	.cursor/outputs/2-splited-features/feature{n}-breakdown.md	/breakdown-planning
+2. Integration Design	feature{n}-breakdown.md	.cursor/outputs/3-integration-test-design/feature{n}-test-design.md	/test-design
+3. Integration Test	feature{n}-test-design.md	src/__tests__/integration/feature{n}-integration.spec.tsx	/integration-test-writer + /integration-test-evaluator
+4. Unit Candidate	feature{n}-integration.spec.tsx + feature{n}-test-design.md	.cursor/outputs/4-integration-to-unit/feature{n}-breakdown-test-design.md	/unit-candidate-finder
+5. Unit Design	feature{n}-breakdown-test-design.md	.cursor/outputs/5-unit-test-design/unit-test-design-feature{n}.md	/test-design
+6. Unit Test	unit-test-design-feature{n}.md	src/__tests__/unit/*.spec.ts	/unit-test-writer
+6.5. Unit Test Refactor	src/__tests__/unit/*.spec.ts	Refactored unit tests	/refactor
+7. Unit TDD	unit tests	Implementation files	/developer
+7.5. Unit Implementation Refactor	Implementation files	Refactored implementation	/refactor
+8. Integration TDD	integration tests	Implementation files	/developer
+8.5. Integration Implementation Refactor	Implementation files	Refactored integration code	/refactor
 
 ## ⚙️ Action: Execution Steps
 
@@ -56,7 +56,7 @@ await call('/breakdown-planning', {
   input: 'docs/prd-output/FEATURE{N}.md',
   output: '.cursor/outputs/2-splited-features/feature{n}-breakdown.md',
 });
-```
+````
 
 **Validation:** Epic/Story/Flow 테이블이 존재하는지 확인
 
@@ -166,6 +166,24 @@ await call('/unit-test-writer', {
 
 ---
 
+### Stage 6.5: Unit Test Refactor
+
+```typescript
+// Brain: 유닛 테스트 코드 리팩토링 (가독성 및 중복 제거)
+// 테스트 로직은 변경하지 않음
+await call('/refactor', {
+  scope: 'test',
+  files: glob('src/**tests**/unit/*-feature{n}.spec.ts'),
+  instruction: '테스트 코드 중복 제거, 변수명 개선, beforeEach로 공통화. 테스트 로직 변경 금지.',
+});
+```
+
+Validation:
+
+테스트 로직 변경 없음 (expect 문 구조 동일)
+
+모든 테스트 통과 확인 (npm test src/**tests**/unit)
+
 ### Stage 7: Unit TDD (Red-Green-Refactor)
 
 ```typescript
@@ -206,6 +224,25 @@ for (const testFile of unitTestFiles) {
 **Validation:** 모든 유닛 테스트 통과
 
 ---
+
+### Stage 7.5: Unit Implementation Refactor
+
+````typescript
+코드 복사
+// Brain: 유닛 테스트 통과 후 코드 리팩토링 (중복 제거, 구조 개선)
+await call('/refactor', {
+scope: 'unit',
+feature: `feature{n}`,
+instruction:
+'테스트 통과 상태 유지하면서 코드 품질 개선. 중복 로직 제거 및 함수 책임 명확화.',
+});
+
+```
+Validation:
+
+모든 유닛 테스트 통과 유지
+
+Linter 에러 없음
 
 ### Stage 8: Integration TDD (Red-Green-Refactor)
 
@@ -250,6 +287,25 @@ if (!passed) {
 
 ---
 
+### Stage 8.5: Integration Implementation Refactor
+```typescript
+
+// Brain: 통합 테스트 통과 후 최종 코드 리팩토링
+await call('/refactor', {
+scope: 'feature',
+feature: `feature{n}`,
+instruction:
+'통합 로직의 중복 제거 및 구조 개선. 모든 테스트 통과 유지.',
+});
+```
+
+Validation:
+
+모든 통합/유닛 테스트 통과 (회귀 포함)
+
+기능 변경 없음 (Diff 검증)
+
+
 ## 🎯 Decision: Control Flow & Error Handling
 
 ### 1. 단계 진행 결정 로직
@@ -269,7 +325,6 @@ function shouldProceedToNextStage(stage: number, result: StageResult): boolean {
 
   return validations[stage]?.() ?? false;
 }
-```
 
 ### 2. 에러 처리 전략
 
@@ -281,6 +336,8 @@ function shouldProceedToNextStage(stage: number, result: StageResult): boolean {
 | **Test Failed (Stage 7-8)**  | TDD 사이클 반복            | 5 (unit), 10 (integration) |
 | **Timeout**                  | 사용자에게 보고 및 대기    | 0                          |
 | **User Intervention Needed** | 명확한 질문과 함께 중단    | -                          |
+
+
 
 ### 3. 조건부 스킵 로직
 
@@ -364,8 +421,6 @@ END (Report: show summary, artifacts, test coverage)
 ```
 
 **Output:**
-
-```
 🎬 Starting orchestration for FEATURE3...
 
 ✅ Stage 1/8: Feature Breakdown completed
@@ -407,79 +462,18 @@ END (Report: show summary, artifacts, test coverage)
    Total time: 15 minutes
    Artifacts: 8 files created
    Test coverage: 95%
-```
 
----
-
-### Example 2: 특정 단계부터 재개
-
-```bash
-/orchestrator @FEATURE3.md --resume-from=stage-6
-```
-
-### Example 3: 특정 단계만 실행
-
-```bash
-/orchestrator @FEATURE3.md --stage=3 --max-score=95
-```
-
----
-
-## 🚨 Error Recovery Examples
-
-### Scenario 1: Integration test quality insufficient
-
-```
-❌ Stage 3 failed: Score 78/100 after 3 iterations
-
-Options:
-1. Manually improve test-design.md and retry Stage 3
-2. Adjust threshold: /orchestrator --stage=3 --min-score=75
-3. Review evaluation feedback at: .cursor/outputs/4-test-evaluation/
-
-What would you like to do?
-```
-
-### Scenario 2: Unit test failing repeatedly
-
-```
-❌ Stage 7 failed: validateInput.spec.ts failing after 5 iterations
-
-Last error:
-  Expected: true
-  Received: false
-  at validateInput.spec.ts:42
-
-Next steps:
-1. Review implementation at: src/utils/validateInput.ts
-2. Check test logic at: src/__tests__/unit/validateInput.spec.ts
-3. Manual fix needed? [y/N]
-```
-
----
-
-## 📊 Progress Tracking
-
-### Real-time Status Display
-
-```
-┌─────────────────────────────────────────────────────┐
-│ 🎯 Orchestration: FEATURE3                         │
-├─────────────────────────────────────────────────────┤
-│ [✓] 1. Breakdown                                    │
-│ [✓] 2. Integration Design                           │
-│ [✓] 3. Integration Test (Score: 92/100)             │
-│ [✓] 4. Unit Candidates (5 found)                    │
-│ [✓] 5. Unit Design                                  │
-│ [→] 6. Unit Test Implementation (40% complete)      │
-│ [ ] 7. Unit TDD                                     │
-│ [ ] 8. Integration TDD                              │
-├─────────────────────────────────────────────────────┤
-│ Elapsed: 8m 32s | ETA: 6m 15s                       │
-└─────────────────────────────────────────────────────┘
-```
-
----
+2. Integration Design3. Integration Test Implementation
+4. Unit Candidate Identification
+5. Unit Test Design
+6. Unit Test Implementation
+   6.5. Unit Test Refactor
+7. Unit TDD (Red-Green)
+   7.5. Unit Implementation Refactor
+8. Integration TDD (Red-Green)
+   8.5. Integration Implementation Refactor
+   🎓 Best Practices
+   ---
 
 ## 🎛️ Configuration Options
 
@@ -552,14 +546,16 @@ Orchestrator는 각 단계 간에 다음 정보를 유지합니다:
 
 Orchestration이 성공적으로 완료되려면:
 
-✅ 모든 integration tests 통과 (score >= 90)  
-✅ 모든 unit tests 통과 (해당하는 경우)  
-✅ Linter 에러 0개  
-✅ 회귀 테스트 통과  
-✅ 모든 artifacts가 올바른 경로에 생성됨  
+✅ 모든 integration tests 통과 (score >= 90)
+✅ 모든 unit tests 통과 (해당하는 경우)
+✅ Linter 에러 0개
+✅ 회귀 테스트 통과
+✅ 모든 artifacts가 올바른 경로에 생성됨
 ✅ 사용자 개입 없이 자동 완료 (또는 명확한 블로커 제시)
 
 ---
 
-**마지막 업데이트**: 2025-10-30  
-**버전**: 1.0.0
+
+마지막 업데이트: 2025-10-30
+버전: 1.1.0
+````

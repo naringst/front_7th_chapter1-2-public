@@ -140,14 +140,10 @@ describe('FEATURE3: 반복 일정 종료 조건 (Epic: 반복 일정 종료 관�
       
       await userEvent.selectOptions(screen.getByLabelText('반복 유형'), 'daily');
       
-      // 종료 날짜 입력 (type="date"인 두 번째 input)
-      const dateInputs = screen.getAllByDisplayValue('');
-      const endDateInput = dateInputs.find((input) => 
-        input.getAttribute('type') === 'date' && input !== screen.getByLabelText('날짜')
-      );
-      if (endDateInput) {
-        await userEvent.type(endDateInput, '2025-10-05');
-      }
+      // 종료 날짜 입력
+      const endDateInput = screen.getByTestId('repeat-end-date-input');
+      await userEvent.click(endDateInput);
+      await userEvent.paste('2025-10-05');
 
       // 저장 버튼 클릭
       const saveButton = screen.getByRole('button', { name: /일정 (추가|저장)/i });
@@ -231,7 +227,10 @@ describe('FEATURE3: 반복 일정 종료 조건 (Epic: 반복 일정 종료 관�
       await userEvent.click(screen.getByRole('checkbox', { name: '반복 일정' }));
       
       await userEvent.selectOptions(screen.getByLabelText('반복 유형'), 'daily');
-      // 종료 날짜 입력 - 간단히 스킵 (기능 미구현)
+      // 종료 날짜 입력
+      const endDateInput = screen.getByTestId('repeat-end-date-input');
+      await userEvent.click(endDateInput);
+      await userEvent.paste('2025-10-10');
 
       // 저장 버튼 클릭
       const saveButton = screen.getByRole('button', { name: /일정 (추가|저장)/i });
@@ -266,7 +265,10 @@ describe('FEATURE3: 반복 일정 종료 조건 (Epic: 반복 일정 종료 관�
       await userEvent.click(screen.getByRole('checkbox', { name: '반복 일정' }));
       
       await userEvent.selectOptions(screen.getByLabelText('반복 유형'), 'daily');
-      // 종료 날짜 입력 - 간단히 스킵 (기능 미구현)
+      // 종료 날짜 입력
+      const endDateInput = screen.getByTestId('repeat-end-date-input');
+      await userEvent.click(endDateInput);
+      await userEvent.paste('2025-10-10');
 
       const saveButton = screen.getByRole('button', { name: /일정 (추가|저장)/i });
       await userEvent.click(saveButton);
@@ -304,7 +306,10 @@ describe('FEATURE3: 반복 일정 종료 조건 (Epic: 반복 일정 종료 관�
       await userEvent.click(screen.getByRole('checkbox', { name: '반복 일정' }));
       
       await userEvent.selectOptions(screen.getByLabelText('반복 유형'), 'daily');
-      // 종료 날짜 입력 - 간단히 스킵 (기능 미구현)
+      // 종료 날짜 입력 (2026년으로 설정하여 최대값 테스트)
+      const endDateInput = screen.getByTestId('repeat-end-date-input');
+      await userEvent.click(endDateInput);
+      await userEvent.paste('2026-01-31');
 
       const saveButton = screen.getByRole('button', { name: /일정 (추가|저장)/i });
       await userEvent.click(saveButton);
