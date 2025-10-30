@@ -13,6 +13,7 @@ import type { Event, EventForm } from '../types';
  * isRepeatingEvent(null)                            // false
  */
 export function isRepeatingEvent(event: Event | EventForm | null | undefined): boolean {
-  return event?.repeat?.type !== undefined && event.repeat.type !== 'none';
+  // [Refactored] 옵셔널 체이닝 중복 제거 및 가독성 개선
+  const repeatType = event?.repeat?.type;
+  return repeatType !== undefined && repeatType !== 'none';
 }
-
