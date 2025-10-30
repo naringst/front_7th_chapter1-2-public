@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { SnackbarProvider } from 'notistack';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
-import App from '../App';
-import { Event } from '../types';
+import App from '../../App';
+import { Event } from '../../types';
 
 // Mock API calls
 const mockFetch = vi.fn();
