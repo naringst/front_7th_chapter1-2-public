@@ -189,13 +189,19 @@ function App() {
       notificationTime,
     };
 
-    const overlapping = findOverlappingEvents(eventData, events);
-    if (overlapping.length > 0) {
-      setOverlappingEvents(overlapping);
-      setIsOverlapDialogOpen(true);
-    } else {
+    // 반복 일정은 일정 겹침을 고려하지 않음
+    if (isRepeating) {
       await saveEvent(eventData, editMode, events); // Pass editMode and events for group editing
       resetForm();
+    } else {
+      const overlapping = findOverlappingEvents(eventData, events);
+      if (overlapping.length > 0) {
+        setOverlappingEvents(overlapping);
+        setIsOverlapDialogOpen(true);
+      } else {
+        await saveEvent(eventData, editMode, events); // Pass editMode and events for group editing
+        resetForm();
+      }
     }
   };
 
