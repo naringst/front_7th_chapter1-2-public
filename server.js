@@ -20,8 +20,16 @@ const getEvents = async () => {
 };
 
 app.get('/api/events', async (_, res) => {
-  const events = await getEvents();
-  res.json(events);
+  try {
+    const data = await getEvents();
+    const list = Array.isArray(data) ? data : Array.isArray(data?.events) ? data.events : [];
+    // Always respond with a consistent shape
+    res.json({ events: list });
+  } catch (err) {
+    console.error('GET /api/events error:', err);
+    // Fail-soft to avoid breaking the UI on first load
+    res.status(200).json({ events: [] });
+  }
 });
 
 app.post('/api/events', async (req, res) => {
