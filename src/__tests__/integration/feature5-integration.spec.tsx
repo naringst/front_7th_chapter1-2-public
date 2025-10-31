@@ -9,10 +9,10 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { SnackbarProvider } from 'notistack';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
-import { server } from '../../setupTests';
 import App from '../../App';
+import { server } from '../../setupTests';
 import { Event } from '../../types';
 
 // Mock repeating events for deletion (same group)
@@ -391,8 +391,9 @@ describe('FEATURE5: 반복 일정 삭제 (Epic: 반복 일정 삭제 관리)', (
       renderApp();
       await screen.findByText('일정 로딩 완료!');
 
-      // Assert: 초기 상태 확인 (3개의 "운동" 일정)
-      const initialExerciseEvents = screen.getAllByText('운동');
+      // Assert: 초기 상태 확인 (이벤트 리스트 기준으로 3개의 "운동" 일정)
+      const listContainer = screen.getByTestId('event-list');
+      const initialExerciseEvents = within(listContainer).getAllByText(/^운동$/);
       expect(initialExerciseEvents.length).toBeGreaterThanOrEqual(3);
 
       // Act: 첫 번째 "운동" 일정 삭제 (단일 삭제)
@@ -411,9 +412,9 @@ describe('FEATURE5: 반복 일정 삭제 (Epic: 반복 일정 삭제 관리)', (
         expect(screen.getByText('일정이 삭제되었습니다.')).toBeInTheDocument();
       });
 
-      // Assert: "운동" 일정이 2개만 남음
+      // Assert: "운동" 일정이 이벤트 리스트에서 2개만 남음
       await waitFor(() => {
-        const remainingExerciseEvents = screen.getAllByText('운동');
+        const remainingExerciseEvents = within(listContainer).getAllByText(/^운동$/);
         expect(remainingExerciseEvents.length).toBe(2);
       });
     });

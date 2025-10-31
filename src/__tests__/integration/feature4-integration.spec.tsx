@@ -136,6 +136,27 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       const yesButton = await screen.findByRole('button', { name: /예/i });
       await userEvent.click(yesButton);
 
+      // 다이얼로그가 닫히고 폼이 채워질 때까지 대기
+      await waitFor(
+        () => {
+          expect(screen.queryByText('해당 일정만 수정하시겠어요?')).not.toBeInTheDocument();
+        },
+        { timeout: 2000 }
+      );
+
+      // 폼이 제대로 채워졌는지 확인
+      await waitFor(
+        () => {
+          const titleInput = screen.getByLabelText('제목') as HTMLInputElement;
+          const startTimeInput = screen.getByLabelText('시작 시간') as HTMLInputElement;
+          const endTimeInput = screen.getByLabelText('종료 시간') as HTMLInputElement;
+          expect(titleInput.value).toBe('팀 미팅');
+          expect(startTimeInput.value).toBe('10:00');
+          expect(endTimeInput.value).toBe('11:00');
+        },
+        { timeout: 3000 }
+      );
+
       // 제목 수정
       const titleInput = screen.getByLabelText('제목') as HTMLInputElement;
       await userEvent.clear(titleInput);
@@ -214,11 +235,32 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       const yesButton = await screen.findByRole('button', { name: /예/i });
       await userEvent.click(yesButton);
 
+      // 다이얼로그가 닫히고 폼이 채워질 때까지 대기
+      await waitFor(
+        () => {
+          expect(screen.queryByText('해당 일정만 수정하시겠어요?')).not.toBeInTheDocument();
+        },
+        { timeout: 2000 }
+      );
+
+      // 폼이 제대로 채워졌는지 확인
+      await waitFor(
+        () => {
+          const titleInput = screen.getByLabelText('제목') as HTMLInputElement;
+          const startTimeInput = screen.getByLabelText('시작 시간') as HTMLInputElement;
+          const endTimeInput = screen.getByLabelText('종료 시간') as HTMLInputElement;
+          expect(titleInput.value).toBe('팀 미팅');
+          expect(startTimeInput.value).toBe('10:00');
+          expect(endTimeInput.value).toBe('11:00');
+        },
+        { timeout: 3000 }
+      );
+
       // 시간 수정
       const startTimeInput = screen.getByLabelText('시작 시간') as HTMLInputElement;
       await userEvent.clear(startTimeInput);
       await userEvent.type(startTimeInput, '09:00');
-      
+
       const endTimeInput = screen.getByLabelText('종료 시간') as HTMLInputElement;
       await userEvent.clear(endTimeInput);
       await userEvent.type(endTimeInput, '10:00');
@@ -271,6 +313,19 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
           expect(screen.queryByText('해당 일정만 수정하시겠어요?')).not.toBeInTheDocument();
         },
         { timeout: 2000 }
+      );
+
+      // 폼이 제대로 채워졌는지 확인
+      await waitFor(
+        () => {
+          const titleInput = screen.getByLabelText('제목') as HTMLInputElement;
+          const startTimeInput = screen.getByLabelText('시작 시간') as HTMLInputElement;
+          const endTimeInput = screen.getByLabelText('종료 시간') as HTMLInputElement;
+          expect(titleInput.value).toBe('팀 미팅');
+          expect(startTimeInput.value).toBe('10:00');
+          expect(endTimeInput.value).toBe('11:00');
+        },
+        { timeout: 3000 }
       );
 
       // 제목 수정
@@ -384,6 +439,19 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
           expect(screen.queryByText('해당 일정만 수정하시겠어요?')).not.toBeInTheDocument();
         },
         { timeout: 2000 }
+      );
+
+      // 폼이 제대로 채워졌는지 확인
+      await waitFor(
+        () => {
+          const titleInput = screen.getByLabelText('제목') as HTMLInputElement;
+          const startTimeInput = screen.getByLabelText('시작 시간') as HTMLInputElement;
+          const endTimeInput = screen.getByLabelText('종료 시간') as HTMLInputElement;
+          expect(titleInput.value).toBe('월례 회의');
+          expect(startTimeInput.value).toBe('09:00');
+          expect(endTimeInput.value).toBe('10:00');
+        },
+        { timeout: 3000 }
       );
 
       // 시간만 수정

@@ -53,6 +53,7 @@ import {
 } from './utils/dateUtils';
 import { findOverlappingEvents } from './utils/eventOverlap';
 import { isRepeatingEvent } from './utils/eventTypeChecker';
+import { findRepeatGroup } from './utils/repeatGroupUtils';
 import { getTimeErrorMessage } from './utils/timeValidation';
 
 const categories = ['업무', '개인', '가족', '기타'];
@@ -101,10 +102,13 @@ function App() {
     editEvent,
   } = useEventForm();
 
-  const { events, saveEvent, deleteEvent } = useEventOperations(Boolean(editingEvent), () => {
-    setEditingEvent(null);
-    setEditMode(null); // Reset edit mode after save
-  });
+  const { events, fetchEvents, saveEvent, deleteEvent } = useEventOperations(
+    Boolean(editingEvent),
+    () => {
+      setEditingEvent(null);
+      setEditMode(null); // Reset edit mode after save
+    }
+  );
 
   const { notifications, notifiedEvents, setNotifications } = useNotifications(events);
   const { view, setView, currentDate, holidays, navigate } = useCalendarView();
@@ -118,6 +122,10 @@ function App() {
   const [pendingEditEvent, setPendingEditEvent] = useState<Event | null>(null);
   const [editMode, setEditMode] = useState<'single' | 'all' | null>(null);
 
+  // Feature 5: 반복 일정 삭제 모드 선택
+  const [isDeleteModeDialogOpen, setIsDeleteModeDialogOpen] = useState(false);
+  const [pendingDeleteEvent, setPendingDeleteEvent] = useState<Event | null>(null);
+
   const { enqueueSnackbar } = useSnackbar();
 
   // Override editEvent to show dialog for repeating events
@@ -129,6 +137,17 @@ function App() {
     } else {
       // 일반 일정이면 바로 편집 모드로
       editEvent(event);
+    }
+  };
+
+  // Handle delete click with dialog for repeating events (Feature 5)
+  const handleDeleteEventClick = (event: Event) => {
+    if (event.repeat.type !== 'none') {
+      setPendingDeleteEvent(event);
+      setIsDeleteModeDialogOpen(true);
+    } else {
+      // 일반 일정은 즉시 삭제
+      deleteEvent(event.id);
     }
   };
 
@@ -659,7 +678,7 @@ function App() {
                     <IconButton aria-label="수정" onClick={() => handleEditEvent(event)}>
                       <Edit />
                     </IconButton>
-                    <IconButton aria-label="삭제" onClick={() => deleteEvent(event.id)}>
+                    <IconButton aria-label="삭제" onClick={() => handleDeleteEventClick(event)}>
                       <Delete />
                     </IconButton>
                   </Stack>
@@ -725,6 +744,49 @@ function App() {
         <DialogActions>
           <Button onClick={() => handleEditModeSelection('single')}>예</Button>
           <Button onClick={() => handleEditModeSelection('all')}>아니오</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Feature 5: 반복 일정 삭제 모드 선택 다이얼로그 */}
+      <Dialog open={isDeleteModeDialogOpen} onClose={() => setIsDeleteModeDialogOpen(false)}>
+        <DialogTitle>반복 일정 삭제</DialogTitle>
+        <DialogContent>
+          <DialogContentText>해당 일정만 삭제하시겠어요?</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={async () => {
+              if (pendingDeleteEvent) {
+                await deleteEvent(pendingDeleteEvent.id);
+                setPendingDeleteEvent(null);
+              }
+              setIsDeleteModeDialogOpen(false);
+            }}
+          >
+            예
+          </Button>
+          <Button
+            onClick={async () => {
+              if (pendingDeleteEvent) {
+                try {
+                  const group = findRepeatGroup(events, pendingDeleteEvent);
+                  if (group.length > 1) {
+                    await Promise.all(
+                      group.map((ev) => fetch(`/api/events/${ev.id}`, { method: 'DELETE' }))
+                    );
+                    await fetchEvents();
+                    enqueueSnackbar('일정이 삭제되었습니다.', { variant: 'info' });
+                  }
+                } catch {
+                  enqueueSnackbar('일정 삭제 실패', { variant: 'error' });
+                }
+              }
+              setPendingDeleteEvent(null);
+              setIsDeleteModeDialogOpen(false);
+            }}
+          >
+            아니오
+          </Button>
         </DialogActions>
       </Dialog>
 
