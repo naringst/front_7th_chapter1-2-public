@@ -84,7 +84,7 @@ describe('일정 CRUD 및 기본 기능', () => {
 
     setupMockHandlerUpdating();
 
-    await user.click(await screen.findByLabelText('Edit event'));
+    await user.click(await screen.findByLabelText('수정'));
 
     await user.clear(screen.getByLabelText('제목'));
     await user.type(screen.getByLabelText('제목'), '수정된 회의');
@@ -106,7 +106,7 @@ describe('일정 CRUD 및 기본 기능', () => {
     expect(await eventList.findByText('삭제할 이벤트')).toBeInTheDocument();
 
     // 삭제 버튼 클릭
-    const allDeleteButton = await screen.findAllByLabelText('Delete event');
+    const allDeleteButton = await screen.findAllByLabelText('삭제');
     await user.click(allDeleteButton[0]);
 
     expect(eventList.queryByText('삭제할 이벤트')).not.toBeInTheDocument();
@@ -118,8 +118,8 @@ describe('일정 뷰', () => {
     // ! 현재 시스템 시간 2025-10-01
     const { user } = setup(<App />);
 
-    await user.click(within(screen.getByLabelText('뷰 타입 선택')).getByRole('combobox'));
-    await user.click(screen.getByRole('option', { name: 'week-option' }));
+    const viewSelect = within(screen.getByLabelText('뷰 타입 선택')).getByRole('combobox');
+    await user.selectOptions(viewSelect, 'week');
 
     // ! 일정 로딩 완료 후 테스트
     await screen.findByText('일정 로딩 완료!');
@@ -142,10 +142,10 @@ describe('일정 뷰', () => {
       category: '업무',
     });
 
-    await user.click(within(screen.getByLabelText('뷰 타입 선택')).getByRole('combobox'));
-    await user.click(screen.getByRole('option', { name: 'week-option' }));
+    const viewSelect = within(screen.getByLabelText('뷰 타입 선택')).getByRole('combobox');
+    await user.selectOptions(viewSelect, 'week');
 
-    const weekView = within(screen.getByTestId('week-view'));
+    const weekView = within(await screen.findByTestId('week-view'));
     expect(weekView.getByText('이번주 팀 회의')).toBeInTheDocument();
   });
 
@@ -307,7 +307,7 @@ describe('일정 충돌', () => {
 
     const { user } = setup(<App />);
 
-    const editButton = (await screen.findAllByLabelText('Edit event'))[1];
+    const editButton = (await screen.findAllByLabelText('수정'))[1];
     await user.click(editButton);
 
     // 시간 수정하여 다른 일정과 충돌 발생
