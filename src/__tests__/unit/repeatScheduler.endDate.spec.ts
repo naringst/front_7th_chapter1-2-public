@@ -1,6 +1,6 @@
 /**
  * Unit Test: repeatScheduler - generateRecurringEventsUntilEndDate
- * 
+ *
  * 종료 날짜까지 반복 일정을 생성하는 로직을 테스트합니다.
  */
 
@@ -145,4 +145,3 @@ describe('repeatScheduler', () => {
     });
   });
 });
-

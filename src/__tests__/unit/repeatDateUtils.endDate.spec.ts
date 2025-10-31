@@ -1,6 +1,6 @@
 /**
  * Unit Test: repeatDateUtils - getRepeatEndDate
- * 
+ *
  * 반복 일정의 종료 날짜 기본값 및 최대값 처리를 테스트합니다.
  */
 
@@ -100,4 +100,3 @@ describe('repeatDateUtils', () => {
     });
   });
 });
-

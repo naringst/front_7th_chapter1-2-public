@@ -61,7 +61,7 @@ export const MAX_REPEAT_END_DATE = '2025-12-31';
  * - undefined/null/빈 문자열인 경우 기본값(2025-12-31) 반환
  * - 최대값(2025-12-31)을 초과하면 최대값으로 제한
  * - 그 외에는 입력값 그대로 반환
- * 
+ *
  * @param endDate - 종료 날짜 (YYYY-MM-DD 형식 또는 undefined)
  * @returns 처리된 종료 날짜
  */

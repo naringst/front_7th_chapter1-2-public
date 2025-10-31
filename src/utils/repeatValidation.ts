@@ -9,7 +9,7 @@ export interface ValidationResult {
 
 /**
  * 반복 일정의 종료 날짜가 유효한지 검증합니다.
- * 
+ *
  * @param startDate - 시작 날짜 (YYYY-MM-DD 형식)
  * @param endDate - 종료 날짜 (YYYY-MM-DD 형식 또는 undefined)
  * @returns 검증 결과
@@ -44,4 +44,3 @@ export function validateRepeatEndDate(
 
   return { valid: true };
 }
-

@@ -1,6 +1,6 @@
 /**
  * Unit Test: repeatValidation
- * 
+ *
  * 반복 일정의 종료 날짜 검증 로직을 테스트합니다.
  */
 
@@ -90,4 +90,3 @@ describe('repeatValidation', () => {
     });
   });
 });
-
