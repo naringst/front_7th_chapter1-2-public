@@ -18,7 +18,12 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
       const response = await fetch('/api/events');
       if (!response.ok) throw new Error('Failed to fetch events');
       const data = await response.json();
-      const list: Event[] = Array.isArray(data) ? data : data?.events;
+      // 서버는 항상 { events: [...] } 형태로 응답
+      const list: Event[] = Array.isArray(data?.events)
+        ? data.events
+        : Array.isArray(data)
+          ? data
+          : [];
       if (!Array.isArray(list)) throw new Error('Invalid events payload');
       setEvents(list);
     } catch (error) {
@@ -57,6 +62,10 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
 
           const repeatGroup = findRepeatGroup(allEvents, originalEvent);
 
+          if (repeatGroup.length === 0) {
+            throw new Error('Repeat group not found');
+          }
+
           if (editMode === 'single') {
             // 단일 수정 → repeat.type = 'none'
             const updatedEvent = applyEventUpdate(
@@ -74,7 +83,21 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
             });
           } else if (editMode === 'all') {
             // 전체 수정 → 그룹 전체 동일 필드 업데이트
-            const updatePromises = repeatGroup.map((groupEvent) => {
+            // 각 이벤트의 date는 유지하고, 나머지 필드만 업데이트
+            const updatedEvents = repeatGroup.map((groupEvent) => {
+              // 전체 수정: repeat.type과 interval은 유지하되, endDate만 업데이트 가능
+              const updatedRepeat = eventData.repeat
+                ? {
+                    ...groupEvent.repeat,
+                    endDate:
+                      eventData.repeat.endDate !== undefined
+                        ? eventData.repeat.endDate
+                        : groupEvent.repeat.endDate,
+                    // repeat.id는 항상 원본 유지
+                    id: groupEvent.repeat.id,
+                  }
+                : groupEvent.repeat;
+
               const updated = applyEventUpdate(
                 groupEvent,
                 {
@@ -85,20 +108,22 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
                   location: eventData.location,
                   category: eventData.category,
                   notificationTime: eventData.notificationTime,
-                  repeat: eventData.repeat
-                    ? { ...groupEvent.repeat, endDate: eventData.repeat.endDate }
-                    : groupEvent.repeat,
+                  repeat: updatedRepeat,
+                  // date는 각 이벤트의 원래 날짜 유지
                 },
                 'all'
               );
-              return fetch(`/api/events/${groupEvent.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updated),
-              });
+              // date 필드를 명시적으로 보존
+              updated.date = groupEvent.date;
+              return updated;
             });
-            const responses = await Promise.all(updatePromises);
-            response = responses[0];
+
+            // 배치 업데이트 API 사용 (더 안전함)
+            response = await fetch('/api/events-list', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ events: updatedEvents }),
+            });
           }
         } else {
           // 일반 일정 수정

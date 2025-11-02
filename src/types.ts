@@ -4,6 +4,7 @@ export interface RepeatInfo {
   type: RepeatType;
   interval: number;
   endDate?: string;
+  id?: string; // 반복 그룹 식별자 (서버에서 생성)
 }
 
 export interface EventForm {

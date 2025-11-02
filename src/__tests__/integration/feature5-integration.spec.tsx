@@ -423,16 +423,18 @@ describe('FEATURE5: 반복 일정 삭제 (Epic: 반복 일정 삭제 관리)', (
   // ----- Story 3: 전체 반복 일정 삭제 -----
   describe('Story 3: 전체 반복 일정 삭제', () => {
     it('TC-5-3-1: 다이얼로그에서 "아니오" 선택 시 전체 반복 일정이 삭제된다', async () => {
-      // Arrange: DELETE API 모킹
+      // Arrange: 배치 DELETE API 모킹
+      let eventsData = [...mockStudyEvents];
       const deletedIds: string[] = [];
       server.use(
         http.get('/api/events', () => {
-          return HttpResponse.json({ events: mockStudyEvents });
+          return HttpResponse.json({ events: eventsData });
         }),
-        http.delete('/api/events/:id', ({ params }) => {
-          const id = params.id as string;
-          deletedIds.push(id);
-          return HttpResponse.json({ success: true });
+        http.delete('/api/events-list', async ({ request }) => {
+          const body = (await request.json()) as { eventIds: string[] };
+          deletedIds.push(...body.eventIds);
+          eventsData = eventsData.filter((e) => !body.eventIds.includes(e.id));
+          return new HttpResponse(null, { status: 204 });
         })
       );
 
@@ -452,7 +454,7 @@ describe('FEATURE5: 반복 일정 삭제 (Epic: 반복 일정 삭제 관리)', (
       const noButton = screen.getByRole('button', { name: '아니오' });
       await userEvent.click(noButton);
 
-      // Assert: DELETE API 호출 횟수 = 3 (전체 그룹)
+      // Assert: DELETE API 호출 시 삭제된 ID 수 = 3 (전체 그룹)
       await waitFor(
         () => {
           expect(deletedIds.length).toBe(3);
@@ -467,18 +469,18 @@ describe('FEATURE5: 반복 일정 삭제 (Epic: 반복 일정 삭제 관리)', (
 
       // Assert: 스낵바 메시지 표시
       await waitFor(() => {
-        expect(screen.getByText('일정이 삭제되었습니다.')).toBeInTheDocument();
+        expect(screen.getByText(/일정.*개가 삭제되었습니다/i)).toBeInTheDocument();
       });
     });
 
     it('TC-5-3-2: 전체 삭제 후 삭제 성공 메시지가 표시된다', async () => {
-      // Arrange: DELETE API 모킹
+      // Arrange: 배치 DELETE API 모킹
       server.use(
         http.get('/api/events', () => {
           return HttpResponse.json({ events: mockStudyEvents });
         }),
-        http.delete('/api/events/:id', () => {
-          return HttpResponse.json({ success: true });
+        http.delete('/api/events-list', () => {
+          return new HttpResponse(null, { status: 204 });
         })
       );
 
@@ -499,24 +501,24 @@ describe('FEATURE5: 반복 일정 삭제 (Epic: 반복 일정 삭제 관리)', (
       // Assert: 스낵바 메시지 표시
       await waitFor(
         () => {
-          expect(screen.getByText('일정이 삭제되었습니다.')).toBeInTheDocument();
+          expect(screen.getByText(/일정.*개가 삭제되었습니다/i)).toBeInTheDocument();
         },
         { timeout: 3000 }
       );
     });
 
     it('TC-5-3-3: 전체 삭제 후 캘린더에서 모든 반복 일정이 사라진다', async () => {
-      // Arrange: GET과 DELETE API 모킹
+      // Arrange: GET과 배치 DELETE API 모킹
       let eventsData = [...mockMeetingEvents];
 
       server.use(
         http.get('/api/events', () => {
           return HttpResponse.json({ events: eventsData });
         }),
-        http.delete('/api/events/:id', ({ params }) => {
-          const id = params.id as string;
-          eventsData = eventsData.filter((e) => e.id !== id);
-          return HttpResponse.json({ success: true });
+        http.delete('/api/events-list', async ({ request }) => {
+          const body = (await request.json()) as { eventIds: string[] };
+          eventsData = eventsData.filter((e) => !body.eventIds.includes(e.id));
+          return new HttpResponse(null, { status: 204 });
         })
       );
 
@@ -541,7 +543,7 @@ describe('FEATURE5: 반복 일정 삭제 (Epic: 반복 일정 삭제 관리)', (
       // Wait for deletion to complete and calendar to re-render
       await waitFor(
         () => {
-          expect(screen.getByText('일정이 삭제되었습니다.')).toBeInTheDocument();
+          expect(screen.getByText(/일정.*개가 삭제되었습니다/i)).toBeInTheDocument();
         },
         { timeout: 3000 }
       );

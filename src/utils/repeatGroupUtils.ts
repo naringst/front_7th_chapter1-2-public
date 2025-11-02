@@ -7,13 +7,10 @@ import type { Event } from '../types';
 /**
  * 주어진 이벤트와 같은 반복 그룹에 속하는 모든 이벤트를 찾습니다.
  *
- * 같은 그룹의 조건:
- * - 제목(title)이 동일
- * - 시작 시간(startTime)이 동일
- * - 종료 시간(endTime)이 동일
- * - 반복 유형(repeat.type)이 동일
- * - 반복 간격(repeat.interval)이 동일
- * - 반복 유형이 'none'이 아님 (일반 일정은 그룹에 속하지 않음)
+ * 같은 그룹의 조건 (우선순위):
+ * 1. repeat.id가 있는 경우: repeat.id가 동일한 모든 이벤트
+ * 2. repeat.id가 없는 경우: 제목, 시작 시간, 종료 시간, 반복 유형, 반복 간격이 모두 동일한 이벤트
+ * - 반복 유형이 'none'이 아닌 경우만 (일반 일정은 그룹에 속하지 않음)
  *
  * @param events - 검색 대상 이벤트 배열
  * @param targetEvent - 그룹을 찾을 기준 이벤트
@@ -38,7 +35,19 @@ export function findRepeatGroup(events: Event[], targetEvent: Event): Event[] {
     return [];
   }
 
-  // 같은 그룹 조건으로 필터링
+  // repeat.id가 있으면 repeat.id로 그룹 찾기 (가장 정확한 방법)
+  if (targetEvent.repeat.id) {
+    const groupById = events.filter(
+      (event) => event.repeat.id === targetEvent.repeat.id && event.repeat.type !== 'none'
+    );
+    // repeat.id로 그룹을 찾았으면 반환
+    if (groupById.length > 0) {
+      return groupById;
+    }
+    // repeat.id로 찾지 못했으면 fallback 로직 사용 (repeat.id가 없는 이벤트도 포함)
+  }
+
+  // repeat.id가 없으면 기존 로직 사용 (제목, 시간, 반복 유형/간격으로 그룹 찾기)
   return events.filter(
     (event) =>
       event.title === targetEvent.title &&

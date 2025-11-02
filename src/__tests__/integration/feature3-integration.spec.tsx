@@ -474,12 +474,16 @@ describe('FEATURE3: 반복 일정 종료 조건 (Epic: 반복 일정 종료 관�
     it(
       'TC-3-3-2 - 종료 날짜를 수정하면 새로운 종료 날짜가 반영된다',
       async () => {
-        // Arrange: 앱 렌더링 및 MSW 설정
+        // Arrange: 앱 렌더링 및 MSW 설정 (배치 PUT API 모킹)
         let updatedEvent: Event | null = null;
         server.use(
-          http.put('/api/events/:id', async ({ request }) => {
-            updatedEvent = (await request.json()) as Event;
-            return HttpResponse.json(updatedEvent);
+          http.put('/api/events-list', async ({ request }) => {
+            const body = (await request.json()) as { events: Event[] };
+            // 첫 번째 이벤트를 updatedEvent에 저장
+            if (body.events.length > 0) {
+              updatedEvent = body.events[0];
+            }
+            return HttpResponse.json(body.events);
           })
         );
 

@@ -14,19 +14,35 @@ app.use(express.json());
 const dbName = process.env.TEST_ENV === 'e2e' ? 'e2e.json' : 'realEvents.json';
 
 const getEvents = async () => {
-  const data = await readFile(`${__dirname}/src/__mocks__/response/${dbName}`, 'utf8');
-
-  return JSON.parse(data);
+  try {
+    const data = await readFile(`${__dirname}/src/__mocks__/response/${dbName}`, 'utf8');
+    const parsed = JSON.parse(data);
+    // 항상 { events: [...] } 형태로 정규화
+    if (Array.isArray(parsed)) {
+      return { events: parsed };
+    }
+    if (parsed && typeof parsed === 'object' && 'events' in parsed) {
+      return parsed;
+    }
+    // 빈 객체나 다른 형태면 빈 배열 반환
+    return { events: [] };
+  } catch (err) {
+    console.error('Error reading events file:', err);
+    // 파일 읽기 실패 시 빈 객체 반환
+    return { events: [] };
+  }
 };
 
 app.get('/api/events', async (_, res) => {
   try {
     const data = await getEvents();
-    const list = Array.isArray(data) ? data : Array.isArray(data?.events) ? data.events : [];
+    // getEvents()는 항상 { events: [...] } 형태를 반환
+    const list = Array.isArray(data?.events) ? data.events : [];
     // Always respond with a consistent shape
     res.json({ events: list });
   } catch (err) {
     console.error('GET /api/events error:', err);
+    console.error('Error stack:', err.stack);
     // Fail-soft to avoid breaking the UI on first load
     res.status(200).json({ events: [] });
   }

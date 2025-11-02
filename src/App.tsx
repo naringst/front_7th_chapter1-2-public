@@ -776,14 +776,33 @@ function App() {
               if (pendingDeleteEvent) {
                 try {
                   const group = findRepeatGroup(events, pendingDeleteEvent);
-                  if (group.length > 1) {
-                    await Promise.all(
-                      group.map((ev) => fetch(`/api/events/${ev.id}`, { method: 'DELETE' }))
-                    );
+                  console.log('전체 삭제 - 찾은 그룹:', group.length, group);
+
+                  if (group.length > 0) {
+                    // 그룹 내 모든 이벤트 ID 수집
+                    const eventIds = group.map((ev) => ev.id);
+
+                    // 배치 삭제 API 사용 (더 안전함)
+                    const response = await fetch('/api/events-list', {
+                      method: 'DELETE',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ eventIds }),
+                    });
+
+                    if (!response.ok) {
+                      throw new Error('Failed to delete events');
+                    }
+
                     await fetchEvents();
-                    enqueueSnackbar('일정이 삭제되었습니다.', { variant: 'info' });
+                    enqueueSnackbar(`일정 ${group.length}개가 삭제되었습니다.`, {
+                      variant: 'info',
+                    });
+                  } else {
+                    console.warn('전체 삭제 - 그룹을 찾을 수 없음:', pendingDeleteEvent);
+                    enqueueSnackbar('삭제할 일정을 찾을 수 없습니다.', { variant: 'error' });
                   }
-                } catch {
+                } catch (error) {
+                  console.error('전체 삭제 실패:', error);
                   enqueueSnackbar('일정 삭제 실패', { variant: 'error' });
                 }
               }

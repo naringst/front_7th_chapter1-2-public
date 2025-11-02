@@ -285,14 +285,15 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
   // ----- Story 2: 전체 반복 일정 수정 -----
   describe('Story 2: 전체 반복 일정 수정', () => {
     it('TC-4-2-1: 전체 수정 선택 시 모든 반복 일정이 수정되고 반복 속성이 유지된다', async () => {
-      // Arrange: PUT 요청 모킹
+      // Arrange: 배치 PUT 요청 모킹
       const updatedEvents: { [id: string]: Event } = {};
       server.use(
-        http.put('/api/events/:id', async ({ params, request }) => {
-          const id = params.id as string;
-          const body = (await request.json()) as Event;
-          updatedEvents[id] = body;
-          return HttpResponse.json(body);
+        http.put('/api/events-list', async ({ request }) => {
+          const body = (await request.json()) as { events: Event[] };
+          body.events.forEach((event) => {
+            updatedEvents[event.id] = event;
+          });
+          return HttpResponse.json(body.events);
         })
       );
 
@@ -336,10 +337,10 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
       const saveButton = screen.getByRole('button', { name: /일정 (추가|수정)/i });
       await userEvent.click(saveButton);
 
-      // Assert: 3번 PUT 호출, 모든 repeat.type = 'weekly', 모든 title = '헬스'
+      // Assert: 배치 PUT 호출, 모든 repeat.type = 'weekly', 모든 title = '헬스'
       await screen.findByText('일정이 수정되었습니다', {}, { timeout: 4000 });
 
-      // 모든 PUT 완료 대기
+      // 배치 PUT 완료 대기
       await waitFor(
         () => {
           expect(Object.keys(updatedEvents).length).toBe(3);
@@ -415,11 +416,12 @@ describe('FEATURE4: 반복 일정 수정 (Epic: 반복 일정 수정 관리)', (
 
       const updatedEvents: { [id: string]: Event } = {};
       server.use(
-        http.put('/api/events/:id', async ({ params, request }) => {
-          const id = params.id as string;
-          const body = (await request.json()) as Event;
-          updatedEvents[id] = body;
-          return HttpResponse.json(body);
+        http.put('/api/events-list', async ({ request }) => {
+          const body = (await request.json()) as { events: Event[] };
+          body.events.forEach((event) => {
+            updatedEvents[event.id] = event;
+          });
+          return HttpResponse.json(body.events);
         })
       );
 

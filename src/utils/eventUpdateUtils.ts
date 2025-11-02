@@ -44,13 +44,19 @@ export function applyEventUpdate(
     // 단일 수정: repeat.type을 'none'으로 변경
     updatedEvent.repeat = { ...event.repeat, type: 'none' };
   } else if (mode === 'all') {
-    // 전체 수정: repeat.type/interval은 유지하되, 업데이트에 endDate가 있으면 반영
-    const nextRepeat = { ...event.repeat } as Event['repeat'];
-    const updatesRepeat = updates.repeat as Event['repeat'] | undefined;
-    if (updatesRepeat && typeof updatesRepeat.endDate !== 'undefined') {
-      nextRepeat.endDate = updatesRepeat.endDate;
+    // 전체 수정: repeat 필드를 업데이트에 따라 병합
+    if (updates.repeat) {
+      const nextRepeat = {
+        ...event.repeat,
+        ...updates.repeat,
+        // id는 항상 원본 유지
+        id: event.repeat.id || updates.repeat.id,
+      };
+      updatedEvent.repeat = nextRepeat;
+    } else {
+      // repeat가 업데이트에 없으면 원본 유지
+      updatedEvent.repeat = { ...event.repeat };
     }
-    updatedEvent.repeat = nextRepeat;
   }
 
   return updatedEvent;
